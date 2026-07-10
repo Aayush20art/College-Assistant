@@ -524,7 +524,7 @@ with st.sidebar:
     st.markdown("#### 👤 Select Your Programme")
     programme_map = {
         "BCA": "BCA",
-        "Bachelor's": "Bachelor's",
+        "BBA": "BBA",
         "B.Com (H)": "B.com (H)",
     }
     selected_label = st.radio(
