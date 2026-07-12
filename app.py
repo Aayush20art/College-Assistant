@@ -526,6 +526,9 @@ with st.sidebar:
         "BCA": "BCA",
         "BBA": "BBA",
         "B.Com (H)": "B.com (H)",
+        "Bachelors": "Bachelors",
+        "Masters": "Masters",
+        "BSC": "BSC"
     }
     selected_label = st.radio(
         "Programme",
