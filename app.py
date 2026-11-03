@@ -11,7 +11,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
-st.set_page_config(page_title="College Assistant", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="College Assistant", page_icon="✨", layout="wide")
 
 # Get API key from Streamlit secrets
 try:
@@ -21,121 +21,180 @@ except KeyError:
     st.stop()
 
 # ---------------------------------------------------------------------------
-# Retro Vintage UI Custom CSS
+# Infinite Animation & Creative UI Custom CSS
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Righteous&display=swap');
 
-    /* Main App Background */
+    /* 1. Infinite Liquid Gradient Background */
     .stApp, .main {
-        background-color: #F5EEDC !important;
-        color: #3D3228 !important;
-        font-family: 'Lato', sans-serif !important;
+        background: linear-gradient(-45deg, #1f005c, #5b0060, #870160, #ac255e, #ca485c, #e16b5c, #f39060, #ffb56b);
+        background-size: 400% 400%;
+        animation: liquidGradient 15s ease infinite alternate;
+        color: #ffffff !important;
+        font-family: 'Outfit', sans-serif !important;
+    }
+    @keyframes liquidGradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
 
-    /* Headings */
+    /* 2. Creative Headings with Infinite Glow */
     h1, h2, h3, h4, h5, h6 {
-        font-family: 'Playfair Display', serif !important;
-        color: #8B5E3C !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.5px !important;
+        font-family: 'Righteous', cursive !important;
+        color: #ffffff !important;
+        letter-spacing: 2px !important;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        animation: textGlow 3s ease-in-out infinite alternate;
+    }
+    @keyframes textGlow {
+        0% { text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+        100% { text-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 30px #ffb56b; }
     }
 
-    /* Sidebar Styling */
+    /* 3. Glassmorphism Sidebar with Floating Effect */
     section[data-testid="stSidebar"] {
-        background-color: #EAE0CC !important;
-        border-right: 1px solid #D6C6AA !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
     }
     
-    /* Text rendering */
-    p, span, div {
-        color: #3D3228 !important;
+    /* Text rendering override for global elements */
+    p, span, div, label {
+        color: #ffffff !important;
     }
 
-    /* File Uploader */
+    /* 4. Floating & Glowing File Uploader */
     [data-testid="stFileUploader"] {
-        background-color: #F5EEDC !important;
-        border: 1px dashed #8B5E3C !important;
-        border-radius: 6px !important;
-        padding: 1rem !important;
-        box-shadow: 2px 2px 5px rgba(61, 50, 40, 0.05) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 2px dashed rgba(255, 255, 255, 0.5) !important;
+        border-radius: 15px !important;
+        padding: 1.5rem !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        animation: floatAnimation 4s ease-in-out infinite;
     }
-    
-    /* Buttons */
+    [data-testid="stFileUploader"]:hover {
+        transform: scale(1.05) translateY(-5px) !important;
+        border-color: #ffb56b !important;
+        box-shadow: 0 10px 30px rgba(255, 181, 107, 0.4) !important;
+    }
+    @keyframes floatAnimation {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-8px); }
+        100% { transform: translateY(0px); }
+    }
+
+    /* 5. Buttons with Infinite Pulse and Expanding Hover */
     .stButton > button {
-        background-color: #8B5E3C !important;
-        color: #F5EEDC !important;
-        border: 1px solid #8B5E3C !important;
-        border-radius: 4px !important;
-        font-family: 'Lato', sans-serif !important;
-        font-weight: 600 !important;
-        padding: 0.5rem 1.2rem !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 1px 1px 3px rgba(61, 50, 40, 0.2) !important;
+        background: linear-gradient(90deg, #ff7eb3, #ff758c) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 30px !important;
+        font-family: 'Righteous', cursive !important;
+        font-size: 1.1rem !important;
+        padding: 0.6rem 1.5rem !important;
+        transition: all 0.4s ease !important;
+        box-shadow: 0 4px 15px rgba(255, 117, 140, 0.4) !important;
+        animation: pulseButton 2.5s infinite;
         width: 100%;
     }
     .stButton > button:hover {
-        background-color: #C17C54 !important;
-        border-color: #C17C54 !important;
-        color: #F5EEDC !important;
-        box-shadow: 2px 2px 6px rgba(61, 50, 40, 0.3) !important;
+        transform: translateY(-3px) scale(1.05) !important;
+        box-shadow: 0 10px 25px rgba(255, 117, 140, 0.7) !important;
+        background: linear-gradient(90deg, #ff758c, #ff7eb3) !important;
+        letter-spacing: 2px !important;
+    }
+    @keyframes pulseButton {
+        0% { box-shadow: 0 0 0 0 rgba(255, 117, 140, 0.7); }
+        70% { box-shadow: 0 0 0 15px rgba(255, 117, 140, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 117, 140, 0); }
     }
 
-    /* Selectbox & Input Fields */
+    /* 6. Selectbox & Input Fields - Smooth Transitions */
     .stSelectbox > div > div, .stTextInput > div > div > input {
-        background-color: #EAE0CC !important;
-        border: 1px solid #D6C6AA !important;
-        color: #3D3228 !important;
-        border-radius: 4px !important;
+        background: rgba(0, 0, 0, 0.2) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        color: #ffffff !important;
+        border-radius: 12px !important;
+        transition: all 0.3s ease !important;
     }
     .stSelectbox > div > div:focus-within, .stTextInput > div > div > input:focus {
-        border-color: #8B5E3C !important;
-        box-shadow: 0 0 0 1px #8B5E3C !important;
+        border-color: #ffb56b !important;
+        box-shadow: 0 0 15px rgba(255, 181, 107, 0.6) !important;
+        background: rgba(0, 0, 0, 0.4) !important;
+        transform: scale(1.02);
     }
 
-    /* Chat Input Container */
+    /* 7. Chat Input Container Glow */
     .stChatInputContainer > div {
-        background-color: #EAE0CC !important;
-        border: 1px solid #8B5E3C !important;
-        border-radius: 6px !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 20px !important;
+        transition: all 0.4s ease;
+    }
+    .stChatInputContainer > div:focus-within {
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.5) !important;
+        border-color: #ffffff !important;
     }
     .stChatInputContainer textarea {
-        color: #3D3228 !important;
+        color: #ffffff !important;
     }
 
-    /* Chat Messages */
+    /* 8. Interactive Chat Bubbles */
     [data-testid="stChatMessage"] {
-        border-radius: 8px !important;
-        padding: 1rem !important;
-        margin-bottom: 1rem !important;
-        border: 1px solid #D6C6AA !important;
-        box-shadow: 1px 2px 4px rgba(61, 50, 40, 0.05) !important;
+        border-radius: 20px !important;
+        padding: 1.5rem !important;
+        margin-bottom: 1.5rem !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        transition: all 0.4s ease !important;
+        animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.320, 1) both;
+    }
+    [data-testid="stChatMessage"]:hover {
+        transform: translateY(-5px) scale(1.01) !important;
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3) !important;
+    }
+    @keyframes slideUp {
+        0% { opacity: 0; transform: translateY(30px) scale(0.95); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
     }
     
     /* Assistant Chat Bubble */
     [data-testid="stChatMessage"][data-baseweb="card"]:nth-child(even) {
-        background-color: #EAE0CC !important; 
+        background: linear-gradient(135deg, rgba(255, 117, 140, 0.15), rgba(255, 126, 179, 0.15)) !important;
+        border-left: 4px solid #ff758c !important;
     }
     /* User Chat Bubble */
     [data-testid="stChatMessage"][data-baseweb="card"]:nth-child(odd) {
-        background-color: #F5EEDC !important;
-        border-color: #8B5E3C !important;
+        background: linear-gradient(135deg, rgba(255, 181, 107, 0.15), rgba(243, 144, 96, 0.15)) !important;
+        border-right: 4px solid #ffb56b !important;
     }
 
-    /* Avatars */
+    /* 9. Floating Avatars */
     [data-testid="chatAvatarIcon-user"] {
-        background-color: #A3A380 !important;
-        color: #F5EEDC !important;
+        background: linear-gradient(45deg, #f39060, #ffb56b) !important;
+        color: #ffffff !important;
+        animation: floatAvatar 3s ease-in-out infinite;
     }
     [data-testid="chatAvatarIcon-assistant"] {
-        background-color: #8B5E3C !important;
-        color: #F5EEDC !important;
+        background: linear-gradient(45deg, #ac255e, #ff758c) !important;
+        color: #ffffff !important;
+        animation: floatAvatar 3s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes floatAvatar {
+        0% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-4px) rotate(5deg); }
+        100% { transform: translateY(0px) rotate(0deg); }
     }
     
-    /* Subtle Vintage textures / details */
     hr {
-        border-top: 1px solid #D6C6AA !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -282,24 +341,24 @@ def setup_app(academic_bytes, fee_bytes):
 # ---------------------------------------------------------------------------
 # Streamlit UI
 # ---------------------------------------------------------------------------
-st.title("🎓 College Assistant")
+st.title("✨ College Assistant ✨")
 
 # Sidebar for file uploads
 with st.sidebar:
-    st.header("1. Upload Documents")
+    st.header("📂 Upload Documents")
     academic_file = st.file_uploader("Upload Academics Handbook (PDF)", type="pdf", key="acad")
     fee_file = st.file_uploader("Upload Fee Structure (PDF)", type="pdf", key="fee")
     
     st.markdown("<hr/>", unsafe_allow_html=True)
     
-    st.header("2. Student Profile")
+    st.header("🎓 Student Profile")
     student_programme = st.selectbox(
         "Which programme are you in?",
         ["BCA", "Bachelor's", "B.com (H)"]
     )
     
     st.markdown("<br/>", unsafe_allow_html=True)
-    if st.button("Clear Chat"):
+    if st.button("CLEAR CHAT 🚀"):
         st.session_state["chat_messages"] = []
         st.rerun()
 
@@ -344,4 +403,4 @@ if academic_file and fee_file:
                 st.info("Check if your Groq API key is valid and you have enough usage quota left.")
 
 else:
-    st.info("👋 Welcome! Please upload both the **Academics Handbook** and the **Fee Structure** PDFs in the sidebar to the left to begin.")
+    st.info("👋 Welcome to the Interactive College Hub! Please upload both the **Academics Handbook** and the **Fee Structure** PDFs in the sidebar to the left to initiate the AI matrix.")
