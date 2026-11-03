@@ -5,6 +5,7 @@ from typing import TypedDict, Annotated
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, START, END
 from langchain_groq import ChatGroq
+from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -19,11 +20,130 @@ except KeyError:
     st.error("GROQ_API_KEY not found in Streamlit secrets. Please add it in your App Settings.")
     st.stop()
 
+# ---------------------------------------------------------------------------
+# Retro Vintage UI Custom CSS
+# ---------------------------------------------------------------------------
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap');
+
+    /* Main App Background */
+    .stApp, .main {
+        background-color: #F5EEDC !important;
+        color: #3D3228 !important;
+        font-family: 'Lato', sans-serif !important;
+    }
+
+    /* Headings */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Playfair Display', serif !important;
+        color: #8B5E3C !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #EAE0CC !important;
+        border-right: 1px solid #D6C6AA !important;
+    }
+    
+    /* Text rendering */
+    p, span, div {
+        color: #3D3228 !important;
+    }
+
+    /* File Uploader */
+    [data-testid="stFileUploader"] {
+        background-color: #F5EEDC !important;
+        border: 1px dashed #8B5E3C !important;
+        border-radius: 6px !important;
+        padding: 1rem !important;
+        box-shadow: 2px 2px 5px rgba(61, 50, 40, 0.05) !important;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        background-color: #8B5E3C !important;
+        color: #F5EEDC !important;
+        border: 1px solid #8B5E3C !important;
+        border-radius: 4px !important;
+        font-family: 'Lato', sans-serif !important;
+        font-weight: 600 !important;
+        padding: 0.5rem 1.2rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 1px 1px 3px rgba(61, 50, 40, 0.2) !important;
+        width: 100%;
+    }
+    .stButton > button:hover {
+        background-color: #C17C54 !important;
+        border-color: #C17C54 !important;
+        color: #F5EEDC !important;
+        box-shadow: 2px 2px 6px rgba(61, 50, 40, 0.3) !important;
+    }
+
+    /* Selectbox & Input Fields */
+    .stSelectbox > div > div, .stTextInput > div > div > input {
+        background-color: #EAE0CC !important;
+        border: 1px solid #D6C6AA !important;
+        color: #3D3228 !important;
+        border-radius: 4px !important;
+    }
+    .stSelectbox > div > div:focus-within, .stTextInput > div > div > input:focus {
+        border-color: #8B5E3C !important;
+        box-shadow: 0 0 0 1px #8B5E3C !important;
+    }
+
+    /* Chat Input Container */
+    .stChatInputContainer > div {
+        background-color: #EAE0CC !important;
+        border: 1px solid #8B5E3C !important;
+        border-radius: 6px !important;
+    }
+    .stChatInputContainer textarea {
+        color: #3D3228 !important;
+    }
+
+    /* Chat Messages */
+    [data-testid="stChatMessage"] {
+        border-radius: 8px !important;
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+        border: 1px solid #D6C6AA !important;
+        box-shadow: 1px 2px 4px rgba(61, 50, 40, 0.05) !important;
+    }
+    
+    /* Assistant Chat Bubble */
+    [data-testid="stChatMessage"][data-baseweb="card"]:nth-child(even) {
+        background-color: #EAE0CC !important; 
+    }
+    /* User Chat Bubble */
+    [data-testid="stChatMessage"][data-baseweb="card"]:nth-child(odd) {
+        background-color: #F5EEDC !important;
+        border-color: #8B5E3C !important;
+    }
+
+    /* Avatars */
+    [data-testid="chatAvatarIcon-user"] {
+        background-color: #A3A380 !important;
+        color: #F5EEDC !important;
+    }
+    [data-testid="chatAvatarIcon-assistant"] {
+        background-color: #8B5E3C !important;
+        color: #F5EEDC !important;
+    }
+    
+    /* Subtle Vintage textures / details */
+    hr {
+        border-top: 1px solid #D6C6AA !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 
 # Cache the heavy AI loading and PDF reading so it only runs once per unique file upload
 @st.cache_resource(show_spinner="Initializing AI and reading documents...")
 def setup_app(academic_bytes, fee_bytes):
-    # Write uploaded files to temporary locations so PyPDFLoader can read them
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_acad:
         tmp_acad.write(academic_bytes)
         acad_path = tmp_acad.name
@@ -51,12 +171,11 @@ def setup_app(academic_bytes, fee_bytes):
     academic_retriever = build_retriever(acad_path)
     fee_retriever = build_retriever(fee_path)
 
-    # Clean up temporary files
     os.remove(acad_path)
     os.remove(fee_path)
 
     llm = ChatGroq(
-        model="openai/gpt-oss-120b",
+        model="llama-3.3-70b-versatile",
         temperature=0.4,
     )
 
@@ -70,19 +189,20 @@ def setup_app(academic_bytes, fee_bytes):
     # 3. Creating the nodes
     def classifier_node(state: State) -> dict:
         last_message = state['messages'][-1].content
-        prompt = (
-            "Classify the following student query into exactly one category: "
-            "'academic', 'fee', or 'general'.\n\n"
-            "Use 'academic' for questions about attendance, exams, grading, credits, "
-            "promotion, course structure, summer training, or degree requirements.\n"
-            "Use 'fee' for questions about tuition, payment, refund, late charges, "
-            "scholarships, or any money-related topic.\n"
-            "Use 'general' for greetings, casual talk, or anything not related to "
-            "the college rules or fee.\n\n"
-            f"Query: {last_message}\n\n"
-            "Return only one word: academic, fee, or general."
-        )
-        response = llm.invoke(prompt)
+        
+        messages = [
+            SystemMessage(content=(
+                "You are a routing AI. Classify the user query into exactly one category: "
+                "'academic', 'fee', or 'general'.\n"
+                "Use 'academic' for attendance, exams, grading, credits, courses, or degrees.\n"
+                "Use 'fee' for tuition, payment, refunds, or money.\n"
+                "Use 'general' for anything else.\n"
+                "Return ONLY ONE WORD."
+            )),
+            HumanMessage(content=last_message)
+        ]
+        
+        response = llm.invoke(messages)
         category = response.content.strip().lower()
 
         if "academic" in category:
@@ -115,22 +235,22 @@ def setup_app(academic_bytes, fee_bytes):
         context = state["retrieved_context"]
 
         if context == "NO_RETRIEVAL_NEEDED":
-            prompt = (
-                f"You are a friendly college assistant talking to a {programme} student. "
-                f"Answer this question using your own general knowledge:\n\n{query}"
-            )
+            messages = [
+                SystemMessage(content=f"You are a friendly college assistant talking to a {programme} student. Answer using your general knowledge."),
+                HumanMessage(content=query)
+            ]
         else:
-            prompt = (
-                f"You are a college assistant helping a {programme} student. "
-                f"Use the following context from the official college documents to answer "
-                f"the question accurately. If the context mentions specific figures for "
-                f"different programmes, highlight the one relevant to {programme} if possible.\n\n"
-                f"Context:\n{context}\n\n"
-                f"Question: {query}\n\n"
-                f"Give a clear, friendly, and precise answer."
-            )
+            messages = [
+                SystemMessage(content=(
+                    f"You are a college assistant helping a {programme} student. "
+                    f"Use the following official context to answer the question accurately. "
+                    f"Highlight specific figures relevant to {programme} if they exist.\n\n"
+                    f"Context:\n{context}"
+                )),
+                HumanMessage(content=query)
+            ]
         
-        response = llm.invoke(prompt)
+        response = llm.invoke(messages)
         return {"messages": [("ai", response.content.strip())]}
 
     # 4. Router function
@@ -159,7 +279,6 @@ def setup_app(academic_bytes, fee_bytes):
 
     return graph.compile()
 
-
 # ---------------------------------------------------------------------------
 # Streamlit UI
 # ---------------------------------------------------------------------------
@@ -171,12 +290,15 @@ with st.sidebar:
     academic_file = st.file_uploader("Upload Academics Handbook (PDF)", type="pdf", key="acad")
     fee_file = st.file_uploader("Upload Fee Structure (PDF)", type="pdf", key="fee")
     
+    st.markdown("<hr/>", unsafe_allow_html=True)
+    
     st.header("2. Student Profile")
     student_programme = st.selectbox(
         "Which programme are you in?",
         ["BCA", "Bachelor's", "B.com (H)"]
     )
     
+    st.markdown("<br/>", unsafe_allow_html=True)
     if st.button("Clear Chat"):
         st.session_state["chat_messages"] = []
         st.rerun()
