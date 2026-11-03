@@ -674,54 +674,29 @@ user_query = st.chat_input(
     disabled=not docs_ready,
 )
 
-if user_query and docs_ready:
-    st.session_state.chat_history.append({"role": "human", "content": user_query})
+if user_query:
+    # 1. Display User Message
+    st.session_state.chat_messages.append({"role": "user", "content": user_query})
+    with st.chat_message("user"):
+        st.markdown(user_query)
 
-    with chat_container:
-        with st.chat_message("user", avatar="🧑‍🎓"):
-            st.markdown(user_query)
+    # 2. Invoke LangGraph with Error Handling
+    with st.spinner("Checking documents and analyzing query..."):
+        try:
+            result = app.invoke({
+                "programme": student_programme,
+                "messages": [("human", user_query)]
+            })
+            answer = result['messages'][-1].content
 
-        with st.chat_message("assistant", avatar="🎓"):
-            placeholder = st.empty()
-            placeholder.markdown("""
-                <div class="typing-dots">
-                    <span></span><span></span><span></span>
-                </div>
-            """, unsafe_allow_html=True)
-
-            try:
-                academic_bytes = st.session_state.academic_pdf
-                fee_bytes = st.session_state.fee_pdf
-                academic_hash = _hash_bytes(academic_bytes)
-                fee_hash = _hash_bytes(fee_bytes)
-
-                academic_retriever = build_retriever_from_bytes(academic_hash, academic_bytes)
-                fee_retriever = build_retriever_from_bytes(fee_hash, fee_bytes)
-
-                compiled_app = build_app(academic_retriever, fee_retriever, academic_hash, fee_hash)
-
-                result = compiled_app.invoke({
-                    "programme": st.session_state.programme,
-                    "messages": [("human", user_query)]
-                })
-
-                answer = result["messages"][-1].content
-                category = result.get("query_type", "general")
-
-                placeholder.empty()
-                st.markdown(badge_map.get(category, ""), unsafe_allow_html=True)
+            # 3. Display AI Response
+            st.session_state.chat_messages.append({"role": "assistant", "content": answer})
+            with st.chat_message("assistant"):
                 st.markdown(answer)
-
-                st.session_state.chat_history.append({
-                    "role": "ai",
-                    "content": answer,
-                    "category": category,
-                })
-
-            except Exception as e:
-                placeholder.empty()
-                st.error(f"Something went wrong while generating the response: {e}")
-
+                
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+            st.info("Check if 'academics_handbook.pdf' and 'fee_structure.pdf' are uploaded to your GitHub repository.")
     st.rerun()
 
 
