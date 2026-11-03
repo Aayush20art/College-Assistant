@@ -56,7 +56,7 @@ def setup_app(academic_bytes, fee_bytes):
     os.remove(fee_path)
 
     llm = ChatGroq(
-        model="qwen/qwen3.8-27b",
+        model="meta-llama/llama-prompt-guard-2-22m",
         temperature=0.4,
     )
 
