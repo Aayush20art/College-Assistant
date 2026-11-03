@@ -56,7 +56,7 @@ def setup_app(academic_bytes, fee_bytes):
     os.remove(fee_path)
 
     llm = ChatGroq(
-        model="meta-llama/llama-prompt-guard-2-22m",
+        model="openai/gpt-oss-120b",
         temperature=0.4,
     )
 
