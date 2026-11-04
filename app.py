@@ -170,7 +170,7 @@ def setup_app(academic_bytes, fee_bytes):
     os.remove(acad_path)
     os.remove(fee_path)
 
-    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.4)
+    llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.4)
 
     class State(TypedDict):
         programme: str
