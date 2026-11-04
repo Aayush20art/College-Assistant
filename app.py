@@ -665,13 +665,15 @@ with st.sidebar:
     if times:
         st.markdown(f'<div class="avg">Avg. response <b>{sum(times) / len(times):.1f}s</b></div>', unsafe_allow_html=True)
 
-    st.download_button(
-        "Download chat",
-        data=build_transcript(student_programme),
-        file_name="college_assistant_chat.txt",
-        mime="text/plain",
-        disabled=not msgs,
-    )
+    # Rendered only once there is something to export, so the download component
+    # is not loaded during the PDF upload / indexing step.
+    if msgs:
+        st.download_button(
+            "Download chat",
+            data=build_transcript(student_programme),
+            file_name="college_assistant_chat.txt",
+            mime="text/plain",
+        )
     st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
     st.button("Clear chat", on_click=clear_chat)
 
