@@ -56,9 +56,32 @@ SUGGESTION_GROUPS = [
 ]
 
 
-def route_badge(route: str) -> str:
+FOLLOW_UPS = {
+    "academic": [
+        ("Exam eligibility", "What are the eligibility conditions to appear in exams?"),
+        ("Re-appear rules", "What are the rules for re-appear or backlog exams?"),
+    ],
+    "fee": [
+        ("Installment options", "Are there installment or scholarship options for fees?"),
+        ("Late fee charges", "What are the late fee charges?"),
+    ],
+    "general": [
+        ("Weekly study plan", "Can you share a weekly study routine I can follow?"),
+        ("Ask about fees", "What is the tuition fee structure for my programme?"),
+    ],
+}
+
+STYLE_NOTES = {
+    "Concise": "\n\nKeep the answer brief: 2-4 sentences or a short list.",
+    "Balanced": "",
+    "Detailed": "\n\nGive a thorough, well-structured answer with relevant specifics and steps.",
+}
+
+
+def route_badge(route: str, secs=None) -> str:
     label = ROUTES.get(route, ROUTES["general"])
-    return html(f'<div class="route-badge route-{route}"><i class="pulse-dot"></i>Answered via {label}</div>')
+    timing = f'<span class="secs">&middot; {secs}s</span>' if secs else ""
+    return html(f'<div class="route-badge route-{route}"><i class="pulse-dot"></i>Answered via {label}{timing}</div>')
 
 
 def status_pill(label: str, ok: bool) -> str:
@@ -100,7 +123,7 @@ def stepper(a_ok: bool, f_ok: bool) -> str:
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
     :root {
         --o1: #ea580c; --o2: #f97316; --o3: #fb923c; --o4: #fed7aa; --o5: #fff7ed;
@@ -326,6 +349,76 @@ st.markdown("""
     .thinking-line { position: relative; height: 3px; margin-top: 0.7rem; border-radius: 3px; background: var(--o5); overflow: hidden; }
     .thinking-line::after { content: ""; position: absolute; top: 0; bottom: 0; width: 30%; border-radius: 3px; background: var(--grad); animation: sweep 1.3s ease-in-out infinite; }
 
+    /* ================= Extra motion layer (subtle, infinite) ================= */
+    @keyframes glowDriftA { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-60px,50px) scale(1.15); } }
+    @keyframes glowDriftB { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(70px,-40px) scale(1.1); } }
+    @keyframes dotDrift   { from { background-position: 0 0; } to { background-position: 26px 26px; } }
+    @keyframes caret      { 50% { border-color: transparent; } }
+    @keyframes typeLoop   { 0% { width: 0; } 40%,62% { width: 43ch; } 100% { width: 0; } }
+    @keyframes ringPing   { 0% { box-shadow: 0 0 0 0 rgba(249,115,22,0.45); } 80%,100% { box-shadow: 0 0 0 12px rgba(249,115,22,0); } }
+    @keyframes inputBreath { 0%,100% { box-shadow: 0 6px 22px rgba(17,24,39,0.08), 0 0 0 0 rgba(249,115,22,0); } 50% { box-shadow: 0 6px 22px rgba(17,24,39,0.08), 0 0 0 5px rgba(249,115,22,0.12); } }
+    @keyframes textShimmer { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+    @keyframes lineSlide  { 0% { background-position: 0% 0; } 100% { background-position: 300% 0; } }
+    @keyframes markGlow   { 0%,100% { box-shadow: 0 6px 16px rgba(234,88,12,0.3), 0 0 0 0 rgba(249,115,22,0.35); } 50% { box-shadow: 0 6px 16px rgba(234,88,12,0.3), 0 0 0 9px rgba(249,115,22,0); } }
+
+    /* Ambient background: two soft glows + faint drifting dot grid */
+    .glow { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; opacity: 0.22; }
+    .glow.g1 { width: 420px; height: 420px; background: #fdba74; top: -140px; right: -80px; animation: glowDriftA 22s ease-in-out infinite; }
+    .glow.g2 { width: 340px; height: 340px; background: #fed7aa; bottom: -120px; left: 18%; animation: glowDriftB 26s ease-in-out infinite; }
+    .dotgrid {
+        position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        background-image: radial-gradient(rgba(234,88,12,0.12) 1px, transparent 1px); background-size: 26px 26px;
+        animation: dotDrift 12s linear infinite;
+        mask-image: radial-gradient(ellipse at 85% 0%, #000 0%, transparent 60%);
+        -webkit-mask-image: radial-gradient(ellipse at 85% 0%, #000 0%, transparent 60%);
+    }
+
+    /* Hero: sliding accent line + typewriter loop + shimmering underline */
+    .hero { border-bottom: 0; position: relative; }
+    .hero::after {
+        content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; border-radius: 2px;
+        background: linear-gradient(90deg, var(--line) 0%, var(--o3) 25%, var(--line) 50%, var(--o3) 75%, var(--line) 100%);
+        background-size: 300% 100%; animation: lineSlide 7s linear infinite;
+    }
+    .accent::after {
+        background: linear-gradient(90deg, #fed7aa, #fdba74, #fed7aa); background-size: 200% 100%;
+        animation: growX 1s ease both 0.5s, textShimmer 3s linear infinite 1.5s;
+    }
+    .typeline { margin-top: 0.9rem; }
+    .typewriter {
+        display: inline-block; overflow: hidden; white-space: nowrap; max-width: 100%; vertical-align: bottom;
+        font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; color: #c2410c;
+        border-right: 2px solid var(--o2); width: 43ch;
+        animation: typeLoop 10s steps(43) infinite, caret 0.8s step-end infinite;
+    }
+
+    /* Small living details */
+    .side-logo .mark { animation: markGlow 3.2s ease-in-out infinite; }
+    .step.active .step-badge { animation: ringPing 2s ease-out infinite; }
+    .ready-banner {
+        background: linear-gradient(90deg, var(--o5), #ffedd5, var(--o5)); background-size: 200% 100%;
+        animation: fadeUp 0.5s ease both, textShimmer 6s linear infinite;
+    }
+    [data-testid="stChatInput"] { animation: inputBreath 4.5s ease-in-out infinite; }
+    .thinking em {
+        font-style: normal; font-weight: 500;
+        background: linear-gradient(90deg, #6b7280 0%, #ea580c 50%, #6b7280 100%); background-size: 200% auto;
+        -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        animation: textShimmer 2s linear infinite;
+    }
+    .route-badge .secs { opacity: 0.7; font-weight: 500; }
+    .avg { text-align: center; font-size: 0.74rem; color: var(--muted); margin: -0.35rem 0 0.8rem; }
+    .avg b { color: var(--o1); }
+
+    /* Suggestion / follow-up chips: arrow slides in on hover */
+    [data-testid="stMain"] .stButton { animation: fadeUp 0.5s ease both; }
+    [data-testid="stMain"] .stButton > button { position: relative; padding-right: 2rem !important; }
+    [data-testid="stMain"] .stButton > button::after {
+        content: "\2192"; position: absolute; right: 14px; top: 50%; margin-top: -0.7em; line-height: 1.4;
+        opacity: 0; transform: translateX(-8px); transition: all 0.25s ease; color: var(--o1);
+    }
+    [data-testid="stMain"] .stButton > button:hover::after { opacity: 1; transform: translateX(0); }
+
     hr { border-top: 1px solid var(--line) !important; }
     [data-testid="stAlert"] { border-radius: 12px; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -341,6 +434,7 @@ st.markdown("""
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { margin-left: 0; }
     }
 </style>
+<div class="glow g1"></div><div class="glow g2"></div><div class="dotgrid"></div>
 """, unsafe_allow_html=True)
 
 
@@ -377,6 +471,7 @@ def setup_app(academic_bytes, fee_bytes):
 
     class State(TypedDict):
         programme: str
+        style: str
         messages: Annotated[list, add_messages]
         query_type: str
         retrieved_context: str
@@ -427,10 +522,11 @@ def setup_app(academic_bytes, fee_bytes):
         query = state["messages"][-1].content
         programme = state.get("programme", "Unknown")
         context = state["retrieved_context"]
+        style_note = STYLE_NOTES.get(state.get("style", "Balanced"), "")
 
         if context == "NO_RETRIEVAL_NEEDED":
             messages = [
-                SystemMessage(content=f"You are a friendly college assistant talking to a {programme} student. Answer using your general knowledge."),
+                SystemMessage(content=f"You are a friendly college assistant talking to a {programme} student. Answer using your general knowledge." + style_note),
                 HumanMessage(content=query)
             ]
         else:
@@ -440,6 +536,7 @@ def setup_app(academic_bytes, fee_bytes):
                     f"Use the following official context to answer the question accurately. "
                     f"Highlight specific figures relevant to {programme} if they exist.\n\n"
                     f"Context:\n{context}"
+                    + style_note
                 )),
                 HumanMessage(content=query)
             ]
@@ -484,6 +581,24 @@ if "stats" not in st.session_state:
 def clear_chat():
     st.session_state["chat_messages"] = []
     st.session_state["stats"] = {"academic": 0, "fee": 0, "general": 0}
+    st.toast("Chat cleared", icon="🧹")
+
+
+def ask(q: str):
+    """Callback: queue a question (suggestion chips / follow-ups)."""
+    st.session_state["pending_query"] = q
+
+
+def regenerate():
+    """Callback: drop the last answer and ask the same question again."""
+    chat = st.session_state["chat_messages"]
+    if len(chat) >= 2 and chat[-1]["role"] == "assistant":
+        last_answer = chat.pop()
+        last_question = chat.pop()
+        r = last_answer.get("route")
+        if r:
+            st.session_state["stats"][r] = max(0, st.session_state["stats"].get(r, 0) - 1)
+        st.session_state["pending_query"] = last_question["content"]
 
 
 def build_transcript(programme: str) -> str:
@@ -530,6 +645,7 @@ with st.sidebar:
 
     st.header("Preferences")
     typing_effect = st.toggle("Typing animation", value=True)
+    answer_style = st.selectbox("Answer style", ["Balanced", "Concise", "Detailed"])
 
     st.markdown("<hr/>", unsafe_allow_html=True)
 
@@ -544,6 +660,10 @@ with st.sidebar:
             <div class="stat"><div class="n">{s['fee']}</div><div class="l">Fees</div></div>
         </div>
     """), unsafe_allow_html=True)
+
+    times = [m["secs"] for m in msgs if m.get("secs")]
+    if times:
+        st.markdown(f'<div class="avg">Avg. response <b>{sum(times) / len(times):.1f}s</b></div>', unsafe_allow_html=True)
 
     st.download_button(
         "Download chat",
@@ -566,6 +686,7 @@ st.markdown(html(f"""
     <div class="hero {compact}">
         <div class="eyebrow">AI College Assistant</div>
         <div class="hero-title">Your college questions, <span class="accent">answered.</span></div>
+        <div class="typeline"><span class="typewriter">Ask about attendance, fees, exams &amp; credits</span></div>
         <div class="hero-desc">Upload your official handbook and fee structure. Get precise, document-backed answers tailored to your programme in seconds.</div>
         <div class="meta">
             <span>Powered by Groq</span>
@@ -582,6 +703,10 @@ st.markdown(html(f"""
 if ready:
     app = setup_app(academic_file.getvalue(), fee_file.getvalue())
 
+    if not st.session_state.get("ready_toast"):
+        st.toast("Knowledge base ready", icon="✅")
+        st.session_state["ready_toast"] = True
+
     st.markdown(html(f"""
         <div class="ready-banner">
             <i class="pulse-dot" style="background:#f97316; animation: dotBeat 1.8s ease-in-out infinite"></i>
@@ -594,22 +719,31 @@ if ready:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if msg.get("route"):
-                st.markdown(route_badge(msg["route"]), unsafe_allow_html=True)
+                st.markdown(route_badge(msg["route"], msg.get("secs")), unsafe_allow_html=True)
 
-    # Suggestions (only on an empty chat)
-    clicked_query = None
-    if not st.session_state["chat_messages"]:
+    chat = st.session_state["chat_messages"]
+    if not chat:
+        # Suggestions on an empty chat
         st.markdown('<div class="section-title">Suggested questions</div>', unsafe_allow_html=True)
         cols = st.columns(3)
         for ci, (name, items) in enumerate(SUGGESTION_GROUPS):
             with cols[ci]:
                 st.markdown(f'<div class="cat-head">{name}</div>', unsafe_allow_html=True)
                 for li, (label, q) in enumerate(items):
-                    if st.button(label, key=f"chip_{ci}_{li}", help=q):
-                        clicked_query = q
+                    st.button(label, key=f"chip_{ci}_{li}", help=q, on_click=ask, args=(q,))
+    elif chat[-1]["role"] == "assistant":
+        # Follow-ups + regenerate after each answer
+        st.markdown('<div class="section-title">Continue</div>', unsafe_allow_html=True)
+        follow_ups = FOLLOW_UPS.get(chat[-1].get("route", "general"), FOLLOW_UPS["general"])
+        cols = st.columns(len(follow_ups) + 1)
+        for i, (label, q) in enumerate(follow_ups):
+            with cols[i]:
+                st.button(label, key=f"fu_{len(chat)}_{i}", help=q, on_click=ask, args=(q,))
+        with cols[-1]:
+            st.button("Regenerate", key=f"regen_{len(chat)}", help="Ask the same question again", on_click=regenerate)
 
     typed_query = st.chat_input("Ask a question about your college...")
-    user_query = clicked_query or typed_query
+    user_query = st.session_state.pop("pending_query", None) or typed_query
 
     if user_query:
         st.session_state["chat_messages"].append({"role": "user", "content": user_query})
@@ -627,10 +761,13 @@ if ready:
             """), unsafe_allow_html=True)
 
             try:
+                t0 = time.time()
                 result = app.invoke({
                     "programme": student_programme,
+                    "style": answer_style,
                     "messages": [("human", user_query)]
                 })
+                secs = round(time.time() - t0, 1)
                 answer = result['messages'][-1].content
                 route = result.get("query_type", "general")
 
@@ -643,11 +780,11 @@ if ready:
                         placeholder.markdown(shown + "▌")
                         time.sleep(delay)
                 placeholder.markdown(answer)
-                st.markdown(route_badge(route), unsafe_allow_html=True)
+                st.markdown(route_badge(route, secs), unsafe_allow_html=True)
 
                 st.session_state["stats"][route] = st.session_state["stats"].get(route, 0) + 1
                 st.session_state["chat_messages"].append(
-                    {"role": "assistant", "content": answer, "route": route}
+                    {"role": "assistant", "content": answer, "route": route, "secs": secs}
                 )
                 st.rerun()  # refresh sidebar stats & download button
 
